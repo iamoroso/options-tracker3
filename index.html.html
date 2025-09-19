@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Options Selling Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            border-left: 4px solid;
+        }
+
+        .stat-card.collateral { border-left-color: #e74c3c; }
+        .stat-card.weekly { border-left-color: #1abc9c; }
+        .stat-card.monthly { border-left-color: #3498db; }
+        .stat-card.yearly { border-left-color: #9b59b6; }
+        .stat-card.symbol { border-left-color: #f39c12; }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .trades-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .trades-table h2 {
+            padding: 20px;
+            background: #f8f9fa;
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+
+        .trade-row {
+            cursor: pointer;
+        }
+
+        .trade-row:hover {
+            background: #e3f2fd !important;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status.open {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.closed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status.expired {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .profit { color: #27ae60; font-weight: bold; }
+        .loss { color: #e74c3c; font-weight: bold; }
+        .return-pct { color: #9b59b6; font-weight: bold; }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group select {
+            padding: 8px;
+            border: 2px solid #ecf0f1;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                font-size: 0.8rem;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Options Selling Tracker</h1>
+            <p>Track your premium collection and trading performance</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Statistics Dashboard -->
+            <div class="stats-grid">
+                <div class="stat-card collateral">
+                    <div class="stat-value" id="totalCollateral">$0.00</div>
+                    <div class="stat-label">Open Collateral</div>
+                </div>
+                <div class="stat-card weekly">
+                    <div class="stat-value" id="weeklyPremium">$0.00</div>
+                    <div class="stat-label">This Week</div>
+                    <select id="weekSelect" style="margin-top: 10px; padding: 5px; border: 1px solid #ddd; border-radius: 5px; font-size: 0.8rem;">
+                        <option value="current">Current Week</option>
+                    </select>
+                </div>
+                <div class="stat-card monthly">
+                    <div class="stat-value" id="monthlyPremium">$0.00</div>
+                    <div class="stat-label">This Month</div>
+                </div>
+                <div class="stat-card yearly">
+                    <div class="stat-value" id="yearlyPremium">$0.00</div>
+                    <div class="stat-label">This Year</div>
+                </div>
+                <div class="stat-card symbol">
+                    <div class="stat-value" id="symbolTotal">$0.00</div>
+                    <div class="stat-label">Symbol Total (Year)</div>
+                    <select id="symbolSelect" style="margin-top: 10px; padding: 5px; border: 1px solid #ddd; border-radius: 5px; font-size: 0.8rem;">
+                        <option value="">Select Symbol</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Trade Entry Form -->
+            <div class="form-section">
+                <h2>Add New Option Trade</h2>
+                <form id="tradeForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Symbol</label>
+                            <input type="text" id="symbol" placeholder="AAPL" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Option Type</label>
+                            <select id="optionType" required>
+                                <option value="Put">Put</option>
+                                <option value="Call">Call</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Strike Price</label>
+                            <input type="number" id="strike" step="0.01" placeholder="150.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Expiration Date</label>
+                            <input type="date" id="expiration" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contracts</label>
+                            <input type="number" id="contracts" min="1" placeholder="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Premium per Contract</label>
+                            <input type="number" id="premium" step="0.01" placeholder="2.50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Trade Date</label>
+                            <input type="date" id="tradeDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Strategy</label>
+                            <select id="strategy">
+                                <option value="Cash Secured Put">Cash Secured Put</option>
+                                <option value="Covered Call">Covered Call</option>
+                                <option value="Credit Spread">Credit Spread</option>
+                                <option value="Roll">Roll</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">Add Trade</button>
+                </form>
+            </div>
+
+            <!-- Trades Table -->
+            <div class="trades-table">
+                <h2>Trade History</h2>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Month:</label>
+                        <select id="monthFilter">
+                            <option value="all">All Months</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Year:</label>
+                        <select id="yearFilter">
+                            <option value="all">All Years</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Status:</label>
+                        <select id="statusFilter">
+                            <option value="all">All Status</option>
+                            <option value="Open">Open</option>
+                            <option value="Closed">Closed</option>
+                            <option value="Expired">Expired</option>
+                        </select>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Symbol</th>
+                            <th>Type</th>
+                            <th>Strike</th>
+                            <th>Exp</th>
+                            <th>Contracts</th>
+                            <th>Premium</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Return %</th>
+                            <th>P&L</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tradesTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let trades = [];
+        let nextId = 1;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing app...');
+            loadTrades();
+            updateStats();
+            updateFilters();
+            renderTrades();
+            
+            // Set today as default date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('tradeDate').value = today;
+            
+            // Symbol selector handler
+            const symbolSelect = document.getElementById('symbolSelect');
+            if (symbolSelect) {
+                symbolSelect.addEventListener('change', updateSymbolTotal);
+            }
+            
+            // Week selector handler
+            const weekSelect = document.getElementById('weekSelect');
+            if (weekSelect) {
+                weekSelect.addEventListener('change', updateWeeklyTotal);
+            }
+        });
+
+        // Form submission handler
+        document.getElementById('tradeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            addTrade();
+        });
+
+        // Filter handlers
+        document.getElementById('monthFilter').addEventListener('change', renderTrades);
+        document.getElementById('yearFilter').addEventListener('change', renderTrades);
+        document.getElementById('statusFilter').addEventListener('change', renderTrades);
+
+        function addTrade() {
+            const form = document.getElementById('tradeForm');
+            const editingId = form.dataset.editingId;
+            
+            const contracts = parseInt(document.getElementById('contracts').value);
+            const premiumPerContract = parseFloat(document.getElementById('premium').value);
+            const totalPremium = contracts * premiumPerContract * 100;
+
+            if (editingId) {
+                const trade = trades.find(t => t.id === parseInt(editingId));
+                if (trade) {
+                    trade.symbol = document.getElementById('symbol').value.toUpperCase();
+                    trade.optionType = document.getElementById('optionType').value;
+                    trade.strike = parseFloat(document.getElementById('strike').value);
+                    trade.expiration = document.getElementById('expiration').value;
+                    trade.contracts = contracts;
+                    trade.premiumPerContract = premiumPerContract;
+                    trade.totalPremium = totalPremium;
+                    trade.tradeDate = document.getElementById('tradeDate').value;
+                    trade.strategy = document.getElementById('strategy').value;
+                    
+                    if (trade.status === 'Open') {
+                        trade.pnl = totalPremium;
+                    } else if (trade.status === 'Closed' && trade.closePrice !== null) {
+                        const closeCost = trade.closePrice * trade.contracts * 100;
+                        trade.pnl = trade.totalPremium - closeCost;
+                    }
+                }
+                
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Add Trade';
+                submitBtn.style.background = 'linear-gradient(135deg, #3498db, #2980b9)';
+                delete form.dataset.editingId;
+            } else {
+                const trade = {
+                    id: nextId++,
+                    symbol: document.getElementById('symbol').value.toUpperCase(),
+                    optionType: document.getElementById('optionType').value,
+                    strike: parseFloat(document.getElementById('strike').value),
+                    expiration: document.getElementById('expiration').value,
+                    contracts: contracts,
+                    premiumPerContract: premiumPerContract,
+                    totalPremium: totalPremium,
+                    tradeDate: document.getElementById('tradeDate').value,
+                    strategy: document.getElementById('strategy').value,
+                    status: 'Open',
+                    closePrice: null,
+                    closeDate: null,
+                    pnl: totalPremium
+                };
+
+                trades.push(trade);
+            }
+
+            saveTrades();
+            updateStats();
+            updateFilters();
+            renderTrades();
+            document.getElementById('tradeForm').reset();
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('tradeDate').value = today;
+        }
+
+        function openTrade(id) {
+            const trade = trades.find(t => t.id === id);
+            if (trade) {
+                trade.status = 'Open';
+                trade.closePrice = null;
+                trade.closeDate = null;
+                trade.pnl = trade.totalPremium;
+                
+                saveTrades();
+                updateStats();
+                renderTrades();
+            }
+        }
+
+        function closeTrade(id, closePrice = 0) {
+            const trade = trades.find(t => t.id === id);
+            if (trade) {
+                const closeCost = closePrice * trade.contracts * 100;
+                trade.status = 'Closed';
+                trade.closePrice = closePrice;
+                trade.closeDate = new Date().toISOString().split('T')[0];
+                trade.pnl = trade.totalPremium - closeCost;
+                
+                saveTrades();
+                updateStats();
+                renderTrades();
+            }
+        }
+
+        function expireTrade(id) {
+            const trade = trades.find(t => t.id === id);
+            if (trade) {
+                trade.status = 'Expired';
+                trade.closeDate = trade.expiration;
+                
+                saveTrades();
+                updateStats();
+                renderTrades();
+            }
+        }
+
+        function editTrade(id) {
+            const trade = trades.find(t => t.id === id);
+            if (trade) {
+                document.getElementById('symbol').value = trade.symbol;
+                document.getElementById('optionType').value = trade.optionType;
+                document.getElementById('strike').value = trade.strike;
+                document.getElementById('expiration').value = trade.expiration;
+                document.getElementById('contracts').value = trade.contracts;
+                document.getElementById('premium').value = trade.premiumPerContract;
+                document.getElementById('tradeDate').value = trade.tradeDate;
+                document.getElementById('strategy').value = trade.strategy;
+                
+                const form = document.getElementById('tradeForm');
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Update Trade';
+                submitBtn.style.background = 'linear-gradient(135deg, #f39c12, #e67e22)';
+                
+                form.dataset.editingId = id;
+                form.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function deleteTrade(id) {
+            trades = trades.filter(t => t.id !== id);
+            saveTrades();
+            updateStats();
+            updateFilters();
+            renderTrades();
+        }
+
+        function calculateReturnPercentage(trade) {
+            if (trade.optionType === 'Put') {
+                const collateral = trade.strike * trade.contracts * 100;
+                const returnPercentage = (trade.totalPremium / collateral) * 100;
+                return returnPercentage.toFixed(2) + '%';
+            } else {
+                return 'N/A';
+            }
+        }
+
+        function getWeekRange(weekOffset = 0) {
+            const now = new Date();
+            const startOfWeek = new Date(now);
+            const dayOfWeek = now.getDay();
+            const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            startOfWeek.setDate(now.getDate() - daysFromMonday - (weekOffset * 7));
+            startOfWeek.setHours(0, 0, 0, 0);
+            
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+            
+            return { start: startOfWeek, end: endOfWeek };
+        }
+
+        function updateWeeklyTotal() {
+            const selectedWeek = document.getElementById('weekSelect').value;
+            let weekOffset = 0;
+            
+            if (selectedWeek !== 'current') {
+                weekOffset = parseInt(selectedWeek);
+            }
+            
+            const { start, end } = getWeekRange(weekOffset);
+            
+            const weeklyTrades = trades.filter(trade => {
+                const tradeDate = new Date(trade.tradeDate);
+                return tradeDate >= start && tradeDate <= end;
+            });
+            
+            const weeklyPremium = weeklyTrades.reduce((sum, trade) => sum + trade.totalPremium, 0);
+            const weeklyEl = document.getElementById('weeklyPremium');
+            if (weeklyEl) weeklyEl.textContent = formatCurrency(weeklyPremium);
+        }
+
+        function updateWeekDropdown() {
+            const weekSelect = document.getElementById('weekSelect');
+            if (!weekSelect) return;
+            
+            const currentValue = weekSelect.value;
+            
+            // Clear existing options
+            weekSelect.innerHTML = '<option value="current">Current Week</option>';
+            
+            // Generate last 8 weeks
+            for (let i = 1; i <= 8; i++) {
+                const { start, end } = getWeekRange(i);
+                const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                const option = document.createElement('option');
+                option.value = i.toString();
+                option.textContent = `${startStr} - ${endStr}`;
+                weekSelect.appendChild(option);
+            }
+            
+            // Restore selection if valid
+            if (weekSelect.querySelector(`option[value="${currentValue}"]`)) {
+                weekSelect.value = currentValue;
+            }
+            
+            updateWeeklyTotal();
+        }
+
+        function updateSymbolTotal() {
+            const selectedSymbol = document.getElementById('symbolSelect').value;
+            const currentYear = new Date().getFullYear();
+            
+            if (!selectedSymbol) {
+                const symbolTotalEl = document.getElementById('symbolTotal');
+                if (symbolTotalEl) symbolTotalEl.textContent = '$0.00';
+                return;
+            }
+            
+            const symbolTrades = trades.filter(trade => {
+                const tradeDate = new Date(trade.tradeDate);
+                return trade.symbol === selectedSymbol && tradeDate.getFullYear() === currentYear;
+            });
+            
+            const symbolTotal = symbolTrades.reduce((sum, trade) => sum + trade.totalPremium, 0);
+            const symbolTotalEl = document.getElementById('symbolTotal');
+            if (symbolTotalEl) symbolTotalEl.textContent = formatCurrency(symbolTotal);
+        }
+
+        function updateSymbolDropdown() {
+            const symbols = [...new Set(trades.map(trade => trade.symbol))].sort();
+            const symbolSelect = document.getElementById('symbolSelect');
+            if (!symbolSelect) return;
+            
+            const currentValue = symbolSelect.value;
+            
+            while (symbolSelect.options.length > 1) {
+                symbolSelect.removeChild(symbolSelect.lastChild);
+            }
+            
+            symbols.forEach(symbol => {
+                const option = document.createElement('option');
+                option.value = symbol;
+                option.textContent = symbol;
+                symbolSelect.appendChild(option);
+            });
+            
+            if (symbols.includes(currentValue)) {
+                symbolSelect.value = currentValue;
+            } else {
+                symbolSelect.value = '';
+            }
+            
+            updateSymbolTotal();
+        }
+
+        function updateStats() {
+            console.log('Updating stats...');
+            
+            // Calculate total collateral for open trades
+            const openTrades = trades.filter(trade => trade.status === 'Open');
+            const totalCollateral = openTrades.reduce((sum, trade) => {
+                let collateral = 0;
+                if (trade.optionType === 'Put') {
+                    collateral = trade.strike * trade.contracts * 100;
+                }
+                return sum + collateral;
+            }, 0);
+            
+            // Weekly calculation - now handled by updateWeeklyTotal()
+            updateWeeklyTotal();
+            
+            // Monthly calculation
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const monthlyTrades = trades.filter(trade => {
+                const tradeDate = new Date(trade.tradeDate);
+                return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear;
+            });
+            const monthlyPremium = monthlyTrades.reduce((sum, trade) => sum + trade.totalPremium, 0);
+            
+            // Yearly calculation
+            const yearlyTrades = trades.filter(trade => {
+                const tradeDate = new Date(trade.tradeDate);
+                return tradeDate.getFullYear() === currentYear;
+            });
+            const yearlyPremium = yearlyTrades.reduce((sum, trade) => sum + trade.totalPremium, 0);
+
+            // Update elements
+            const collateralEl = document.getElementById('totalCollateral');
+            const monthlyEl = document.getElementById('monthlyPremium');
+            const yearlyEl = document.getElementById('yearlyPremium');
+            
+            if (collateralEl) collateralEl.textContent = formatCurrency(totalCollateral);
+            if (monthlyEl) monthlyEl.textContent = formatCurrency(monthlyPremium);
+            if (yearlyEl) yearlyEl.textContent = formatCurrency(yearlyPremium);
+            
+            updateWeekDropdown();
+            updateSymbolDropdown();
+        }
+
+        function updateFilters() {
+            const months = [...new Set(trades.map(trade => {
+                const date = new Date(trade.tradeDate);
+                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+            }))].sort();
+            
+            const years = [...new Set(trades.map(trade => new Date(trade.tradeDate).getFullYear()))].sort().reverse();
+            
+            updateSelectOptions('monthFilter', months);
+            updateSelectOptions('yearFilter', years);
+        }
+
+        function updateSelectOptions(selectId, options) {
+            const select = document.getElementById(selectId);
+            const currentValue = select.value;
+            
+            while (select.options.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                select.appendChild(optionElement);
+            });
+            
+            select.value = currentValue;
+        }
+
+        function renderTrades() {
+            const monthFilter = document.getElementById('monthFilter').value;
+            const yearFilter = document.getElementById('yearFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filteredTrades = trades;
+            
+            if (monthFilter !== 'all') {
+                filteredTrades = filteredTrades.filter(trade => {
+                    const tradeMonth = new Date(trade.tradeDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+                    return tradeMonth === monthFilter;
+                });
+            }
+            
+            if (yearFilter !== 'all') {
+                filteredTrades = filteredTrades.filter(trade => {
+                    return new Date(trade.tradeDate).getFullYear() == yearFilter;
+                });
+            }
+            
+            if (statusFilter !== 'all') {
+                filteredTrades = filteredTrades.filter(trade => trade.status === statusFilter);
+            }
+
+            const tbody = document.getElementById('tradesTableBody');
+            tbody.innerHTML = '';
+
+            filteredTrades.sort((a, b) => new Date(b.tradeDate) - new Date(a.tradeDate)).forEach(trade => {
+                const row = document.createElement('tr');
+                row.className = 'trade-row';
+                row.onclick = () => editTrade(trade.id);
+                row.innerHTML = `
+                    <td>${formatDate(trade.tradeDate)}</td>
+                    <td><strong>${trade.symbol}</strong></td>
+                    <td>${trade.optionType}</td>
+                    <td>$${trade.strike}</td>
+                    <td>${formatDate(trade.expiration)}</td>
+                    <td>${trade.contracts}</td>
+                    <td>$${trade.premiumPerContract.toFixed(2)}</td>
+                    <td><strong>${formatCurrency(trade.totalPremium)}</strong></td>
+                    <td><span class="status ${trade.status.toLowerCase()}">${trade.status}</span></td>
+                    <td class="return-pct"><strong>${calculateReturnPercentage(trade)}</strong></td>
+                    <td class="${trade.pnl >= 0 ? 'profit' : 'loss'}">${formatCurrency(trade.pnl)}</td>
+                    <td onclick="event.stopPropagation()">
+                        <button onclick="openTrade(${trade.id})" class="btn" style="padding: 4px 8px; font-size: 0.7rem; margin-right: 3px; background: #2ecc71;">Open</button>
+                        <button onclick="handleClose(${trade.id})" class="btn" style="padding: 4px 8px; font-size: 0.7rem; margin-right: 3px;">Close</button>
+                        <button onclick="expireTrade(${trade.id})" class="btn" style="padding: 4px 8px; font-size: 0.7rem; margin-right: 3px;">Expire</button>
+                        <button onclick="deleteTrade(${trade.id})" class="btn" style="padding: 4px 8px; font-size: 0.7rem; background: #e74c3c;">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function handleClose(id) {
+            const closePrice = prompt('Enter the close price per contract (enter 0 if expired worthless):');
+            if (closePrice !== null && !isNaN(closePrice)) {
+                closeTrade(id, parseFloat(closePrice));
+            }
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(amount);
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: '2-digit'
+            });
+        }
+
+        function saveTrades() {
+            try {
+                localStorage.setItem('optionTrades', JSON.stringify(trades));
+                localStorage.setItem('nextId', nextId.toString());
+            } catch (e) {
+                console.error('Error saving trades:', e);
+            }
+        }
+
+        function loadTrades() {
+            try {
+                const savedTrades = localStorage.getItem('optionTrades');
+                const savedNextId = localStorage.getItem('nextId');
+                
+                if (savedTrades) {
+                    trades = JSON.parse(savedTrades);
+                }
+                
+                if (savedNextId) {
+                    nextId = parseInt(savedNextId);
+                }
+            } catch (e) {
+                console.error('Error loading trades:', e);
+                trades = [];
+                nextId = 1;
+            }
+        }
+    </script>
+</body>
+</html>
